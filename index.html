@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi Siswa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 flex justify-center items-center min-h-screen p-4 sm:p-6">
+    <div class="w-full max-w-lg sm:max-w-md bg-white shadow-lg rounded-lg p-4 space-y-8">
+        <div class="flex justify-center mb-3">
+            <img src="https://i.imgur.com/RhIIyuD.png" alt="Logo Sekolah" class="w-24 h-24">
+        </div>
+        <h1 class="text-xl font-bold text-center text-blue-600">
+            Sumatif Akhir Semester (SAS)<br />
+            TP 2024/2025
+        </h1>
+        <hr class="my-3" />
+        <!-- Panel 1: Input Token -->
+        <div id="panel1" class="panel active space-y-4">
+            <label for="token" class="block text-gray-800 font-semibold">Masukkan Token:</label>
+            <div class="space-y-1">
+                <input type="text" id="token"
+                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Contoh: a12B3C">
+                <p id="tokenErrorMessage" class="error text-red-500 text-xs mt-1"></p>
+            </div>
+            <button onclick="verifyToken()"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition">Verifikasi
+                Token</button>
+        </div>
+
+        <!-- Panel 2: Informasi Siswa dan Input Kode -->
+        <div id="panel2" class="panel space-y-4 hidden">
+            <h2 class="text-lg font-semibold text-gray-800">Data Siswa</h2>
+            <p id="studentInfo" class="text-sm bg-gray-50 p-4 rounded-lg border grid gap-y-1 gap-x-1"
+                style="grid-template-columns: 28% max-content 1fr;"></p>
+            <label for="kode" class="block text-gray-800 font-semibold">Masukkan Kode Login:</label>
+            <div class="space-y-1">
+                <input type="text" id="kode"
+                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Contoh: ABCDE">
+                <p id="kodeErrorMessage" class="error text-red-500 text-xs mt-1"></p>
+            </div>
+            <button onclick="verifyKode()"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition">Verifikasi
+                Kode</button>
+            <button onclick="goBack()"
+                class="w-full bg-gray-300 hover:bg-gray-400 text-black-500 font-semibold py-2 rounded-lg transition">Kembali</button>
+        </div>
+    </div>
+
+    <!-- spinner -->
+    <div id="spinnerOverlay"
+        class="hidden fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50">
+        <div class="spinner"></div>
+    </div>
+
+    <style>
+        * {
+            border: 1px solid red;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <script>
+        const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbzoY2s5EaB59vdp7oTTpQc2S5KutvyO0RVE4-pobM_pYbhh_afimc39wsNVTYUQsgQe/exec'; // Ganti dengan URL Web App Anda
+
+        function showSpinner() {
+            document.getElementById('spinnerOverlay').classList.remove('hidden');
+        }
+
+        function hideSpinner() {
+            document.getElementById('spinnerOverlay').classList.add('hidden');
+        }
+
+        async function verifyToken() {
+            const token = document.getElementById('token').value.trim();
+            document.getElementById('tokenErrorMessage').textContent = "";
+
+            if (!token) {
+                document.getElementById('tokenErrorMessage').textContent = "Token tidak boleh kosong.";
+                return;
+            }
+
+            showSpinner();
+
+            try {
+                const response = await fetch(`${googleScriptUrl}?action=getStudentData&token=${token}`);
+                const data = await response.json();
+
+                console.log("Respon API:", data); // Log untuk debugging
+                hideSpinner();
+
+                if (data && data.nama) {
+                    // Token ditemukan
+                    document.getElementById('studentInfo').innerHTML = `
+                    <span class="font-semibold">Nama</span> <span>:</span> <span>${data.nama}</span>
+                    <span class="font-semibold">No. Peserta</span> <span>:</span> <span>${data.nopes}</span>
+                    <span class="font-semibold">Kelas</span> <span>:</span> <span>${data.kelas}</span>
+                    <span class="font-semibold">Jenis Kel.</span> <span>:</span> <span>${data.jk}</span>
+                    <span class="font-semibold">NISN</span> <span>:</span> <span>${data.nisn}</span>
+                    <span class="font-semibold">TTL</span> <span>:</span> <span>${data.tempatLahir}, ${data.tanggalLahir}</span>
+                `;
+                    document.getElementById('panel1').classList.add('hidden');
+                    document.getElementById('panel2').classList.remove('hidden');
+                } else {
+                    document.getElementById('tokenErrorMessage').textContent = "Token tidak ditemukan.";
+                }
+            } catch (error) {
+                console.error("Error:", error); // Log error untuk debugging
+                hideSpinner();
+                document.getElementById('tokenErrorMessage').textContent = "Terjadi kesalahan server.";
+            }
+        }
+
+        async function verifyKode() {
+            const kode = document.getElementById('kode').value.trim();
+            const token = document.getElementById('token').value.trim();
+            document.getElementById('kodeErrorMessage').textContent = "";
+
+            if (!kode) {
+                document.getElementById('kodeErrorMessage').textContent = "Kode Login tidak boleh kosong.";
+                return;
+            }
+
+            showSpinner();
+
+            try {
+                const response = await fetch(`${googleScriptUrl}?action=getFormLink&token=${token}&kode=${kode}`);
+                const link = await response.json();
+
+                hideSpinner();
+
+                if (link && link.link) {
+                    window.open(link.link, "_blank");
+                } else {
+                    document.getElementById('kodeErrorMessage').textContent = "Kode Login salah, silakan coba lagi.";
+                }
+            } catch (error) {
+                console.error("Error:", error); // Log error untuk debugging
+                hideSpinner();
+                document.getElementById('kodeErrorMessage').textContent = "Terjadi kesalahan server.";
+            }
+        }
+
+        function goBack() {
+            document.getElementById('panel2').classList.add('hidden');
+            document.getElementById('panel1').classList.remove('hidden');
+        }
+    </script>
+
+</body>
+
+</html>
